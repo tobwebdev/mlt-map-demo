@@ -3,39 +3,29 @@
  * Paste this CSS inside a <style> block in Webflow:
  *   Page settings (Home) → Custom Code → Inside <head> tag
  *
- * Colors reference the Webflow brand variables (Color Palette collection)
- * with hex fallbacks. Edit colors here to update the map without redeploying
- * the JavaScript. All --primary--*, --secondary--*, --tertiary--*, and
- * --neutral--* variables resolve to the brand tokens defined in the Webflow
- * Variables panel.
+ * Three-tier fallback: each color resolves
+ *   1. The Apply Colors semantic token (--_apply-colors---map--*) — preferred
+ *   2. The palette variable (--primary--*, --neutral--*, etc.) — if Apply Colors
+ *      is not in scope at that selector
+ *   3. A hex literal — last resort, also keeps the file readable
  *
- * SEMANTIC MAPPING (Apply Colors → Palette):
- *   Map/Base Land            → Tertiary/Fog            #d6c9be
- *   Map/Stroke               → Neutral/Midnight        #282721
- *   Map/County Stroke        → Neutral/Midnight40      #a8a7a4
- *   Map/Property Public      → Primary/Evergreen       #1d4925
- *   Map/Property Private     → Secondary/Cedar         #7d342d
- *   Map/Loc City             → Tertiary/Superior       #323a69
- *   Map/Loc State Park       → Primary/Evergreen       #1d4925
- *   Map/Loc State Rec        → Secondary/Goldenrod     #f1bb5f
- *   Map/Loc State Forest     → Secondary/Moss          #6e8e48
- *   Map/Loc National Park    → Secondary/Cedar         #7d342d
- *   Map/Loc National Forest  → Tertiary/Loam           #4f3b31
- *   Map/Background           → Neutral/Snow            #f9f4eb
- *   Map/Text                 → Neutral/Midnight        #282721
- *   Map/Accent               → Primary/Evergreen       #1d4925
+ * Editing colors:
+ *   - To change one element only: edit the hex/var here and republish.
+ *   - To change site-wide: rebind the matching token in Webflow's Apply Colors
+ *     collection (e.g. Map/Property Public → a different palette color) — the
+ *     map will pick up the change automatically with no edits to this file.
  * ========================================================================= */
 
 
 /* --- Base layers (MN outline, counties) --- */
 .ltm-layer-outline path {
-  fill: var(--tertiary--fog, #d6c9be);
-  stroke: var(--neutral--midnight, #282721);
+  fill: var(--_apply-colors---map--base-land, var(--tertiary--fog, #d6c9be));
+  stroke: var(--_apply-colors---map--stroke, var(--neutral--midnight, #282721));
   stroke-width: 1.2;
 }
 .ltm-layer-counties path {
   fill: none;
-  stroke: var(--neutral--midnight40, #a8a7a4);
+  stroke: var(--_apply-colors---map--county-stroke, var(--neutral--midnight40, #a8a7a4));
   stroke-width: 0.5;
 }
 .ltm-layer-counties path.in-cms {
@@ -69,8 +59,8 @@
 
 /* --- Properties (square markers) --- */
 .ltm-layer-properties rect {
-  fill: var(--primary--evergreen, #1d4925); /* public access */
-  stroke: var(--neutral--snow, #f9f4eb);
+  fill: var(--_apply-colors---map--property-public, var(--primary--evergreen, #1d4925));
+  stroke: var(--_apply-colors---map--background, var(--neutral--snow, #f9f4eb));
   stroke-width: 1.2;
   cursor: pointer;
   transition: transform 0.15s;
@@ -79,13 +69,13 @@
 }
 .ltm-layer-properties rect:hover { transform: scale(2); }
 .ltm-layer-properties rect.private {
-  fill: var(--secondary--cedar, #7d342d);
+  fill: var(--_apply-colors---map--property-private, var(--secondary--cedar, #7d342d));
 }
 
 
 /* --- Location point markers (cities, parks, rec areas) --- */
 .ltm-layer-locations .marker {
-  stroke: var(--neutral--snow, #f9f4eb);
+  stroke: var(--_apply-colors---map--background, var(--neutral--snow, #f9f4eb));
   stroke-width: 1.2;
   cursor: pointer;
 }
@@ -95,11 +85,11 @@
   transform-box: fill-box;
   transform-origin: center;
 }
-.ltm-layer-locations .marker.statepark { fill: var(--primary--evergreen, #1d4925); }
-.ltm-layer-locations .marker.staterec  { fill: var(--secondary--goldenrod, #f1bb5f); }
+.ltm-layer-locations .marker.statepark { fill: var(--_apply-colors---map--loc-state-park, var(--primary--evergreen, #1d4925)); }
+.ltm-layer-locations .marker.staterec  { fill: var(--_apply-colors---map--loc-state-rec, var(--secondary--goldenrod, #f1bb5f)); }
 .ltm-layer-locations .marker.statepark:hover,
 .ltm-layer-locations .marker.staterec:hover { transform: scale(2); }
-.ltm-layer-locations .marker.city { fill: var(--tertiary--superior, #323a69); }
+.ltm-layer-locations .marker.city { fill: var(--_apply-colors---map--loc-city, var(--tertiary--superior, #323a69)); }
 
 
 /* --- Location area shapes (forests, national park/forest) --- */
@@ -112,9 +102,18 @@
   transition: fill-opacity 0.15s, stroke-width 0.15s;
 }
 .ltm-layer-locations .area:hover { fill-opacity: 0.55; stroke-width: 2.5; }
-.ltm-layer-locations .area.stateforest    { fill: var(--secondary--moss, #6e8e48);   stroke: var(--secondary--moss, #6e8e48); }
-.ltm-layer-locations .area.nationalpark   { fill: var(--secondary--cedar, #7d342d);  stroke: var(--secondary--cedar, #7d342d); }
-.ltm-layer-locations .area.nationalforest { fill: var(--tertiary--loam, #4f3b31);    stroke: var(--tertiary--loam, #4f3b31); }
+.ltm-layer-locations .area.stateforest {
+  fill: var(--_apply-colors---map--loc-state-forest, var(--secondary--moss, #6e8e48));
+  stroke: var(--_apply-colors---map--loc-state-forest, var(--secondary--moss, #6e8e48));
+}
+.ltm-layer-locations .area.nationalpark {
+  fill: var(--_apply-colors---map--loc-national-park, var(--secondary--cedar, #7d342d));
+  stroke: var(--_apply-colors---map--loc-national-park, var(--secondary--cedar, #7d342d));
+}
+.ltm-layer-locations .area.nationalforest {
+  fill: var(--_apply-colors---map--loc-national-forest, var(--tertiary--loam, #4f3b31));
+  stroke: var(--_apply-colors---map--loc-national-forest, var(--tertiary--loam, #4f3b31));
+}
 
 
 /* --- Layer/type toggle visibility (set by JS; do not edit selectors) --- */
@@ -135,7 +134,7 @@
 
 /* --- Detail panel (right side, populated on click) --- */
 .ltm-detail .kicker {
-  color: var(--neutral--midnight60, #777775);
+  color: var(--_apply-colors---page--text-muted, var(--neutral--midnight60, #777775));
   text-transform: uppercase;
   letter-spacing: 0.06em;
   margin: 0 0 8px;
@@ -149,13 +148,13 @@
   margin-top: 12px;
 }
 .ltm-detail .stat {
-  background: var(--neutral--snow, #f9f4eb);
+  background: var(--_apply-colors---map--background, var(--neutral--snow, #f9f4eb));
   border-radius: 6px;
   padding: 8px 10px;
 }
 .ltm-detail .stat .v { font-weight: 600; margin: 0; }
 .ltm-detail .stat .l {
-  color: var(--neutral--midnight60, #777775);
+  color: var(--_apply-colors---page--text-muted, var(--neutral--midnight60, #777775));
   text-transform: uppercase;
   letter-spacing: 0.04em;
   margin: 0;
@@ -165,24 +164,26 @@
   display: inline-block;
   margin-top: 14px;
   padding: 10px 16px;
-  background: var(--primary--evergreen, #1d4925);
-  color: var(--neutral--snow, #f9f4eb);
-  border: 1px solid var(--primary--evergreen, #1d4925);
+  background: var(--_apply-colors---button--primary-bg, var(--primary--evergreen, #1d4925));
+  color: var(--_apply-colors---button--primary-text, var(--neutral--snow, #f9f4eb));
+  border: 1px solid var(--_apply-colors---button--primary-bg, var(--primary--evergreen, #1d4925));
   border-radius: 6px;
   text-decoration: none;
   transition: background 0.15s;
 }
-.ltm-detail .ltm-cta:hover { background: var(--secondary--moss, #6e8e48); }
+.ltm-detail .ltm-cta:hover {
+  background: var(--_apply-colors---map--loc-state-forest, var(--secondary--moss, #6e8e48));
+}
 
 
 /* --- Hover tooltip (created by JS, attached to <body>) --- */
 .ltm-tooltip {
   position: absolute;
   pointer-events: none;
-  background: var(--neutral--snow, #f9f4eb);
-  color: var(--neutral--midnight, #282721);
+  background: var(--_apply-colors---map--background, var(--neutral--snow, #f9f4eb));
+  color: var(--_apply-colors---map--text, var(--neutral--midnight, #282721));
   border: 1px solid var(--neutral--midnight20, #ceccc8);
-  border-left: 3px solid var(--primary--evergreen, #1d4925);
+  border-left: 3px solid var(--_apply-colors---map--accent, var(--primary--evergreen, #1d4925));
   border-radius: 4px;
   padding: 6px 10px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
@@ -193,7 +194,10 @@
 }
 .ltm-tooltip.show { opacity: 1; }
 .ltm-tooltip .ltm-tt-name { font-weight: 600; margin: 0; }
-.ltm-tooltip .ltm-tt-type { color: var(--neutral--midnight60, #777775); margin: 2px 0 0; }
+.ltm-tooltip .ltm-tt-type {
+  color: var(--_apply-colors---page--text-muted, var(--neutral--midnight60, #777775));
+  margin: 2px 0 0;
+}
 
 
 /* --- Sidebar (toggles + habitat filter) --- */
@@ -215,18 +219,18 @@
 .ltm-sidebar .swatch.swatch--sq   { border-radius: 2px; }
 .ltm-sidebar .swatch.swatch--area { border-radius: 2px; opacity: 0.6; }
 
-/* Sidebar swatch colors — keep aligned with the layer colors above. */
+/* Sidebar swatch colors — match the corresponding layer colors above. */
 .ltm-sidebar .swatch-biomes        { background: var(--secondary--moss, #6e8e48); }
 .ltm-sidebar .swatch-regions       { background: var(--tertiary--sky, #7facd2); }
-.ltm-sidebar .swatch-counties      { background: var(--neutral--midnight40, #a8a7a4); }
-.ltm-sidebar .swatch-public        { background: var(--primary--evergreen, #1d4925); }
-.ltm-sidebar .swatch-private       { background: var(--secondary--cedar, #7d342d); }
-.ltm-sidebar .swatch-city          { background: var(--tertiary--superior, #323a69); }
-.ltm-sidebar .swatch-statepark     { background: var(--primary--evergreen, #1d4925); }
-.ltm-sidebar .swatch-staterec      { background: var(--secondary--goldenrod, #f1bb5f); }
-.ltm-sidebar .swatch-stateforest   { background: var(--secondary--moss, #6e8e48); }
-.ltm-sidebar .swatch-nationalpark  { background: var(--secondary--cedar, #7d342d); }
-.ltm-sidebar .swatch-nationalforest{ background: var(--tertiary--loam, #4f3b31); }
+.ltm-sidebar .swatch-counties      { background: var(--_apply-colors---map--county-stroke, var(--neutral--midnight40, #a8a7a4)); }
+.ltm-sidebar .swatch-public        { background: var(--_apply-colors---map--property-public, var(--primary--evergreen, #1d4925)); }
+.ltm-sidebar .swatch-private       { background: var(--_apply-colors---map--property-private, var(--secondary--cedar, #7d342d)); }
+.ltm-sidebar .swatch-city          { background: var(--_apply-colors---map--loc-city, var(--tertiary--superior, #323a69)); }
+.ltm-sidebar .swatch-statepark     { background: var(--_apply-colors---map--loc-state-park, var(--primary--evergreen, #1d4925)); }
+.ltm-sidebar .swatch-staterec      { background: var(--_apply-colors---map--loc-state-rec, var(--secondary--goldenrod, #f1bb5f)); }
+.ltm-sidebar .swatch-stateforest   { background: var(--_apply-colors---map--loc-state-forest, var(--secondary--moss, #6e8e48)); }
+.ltm-sidebar .swatch-nationalpark  { background: var(--_apply-colors---map--loc-national-park, var(--secondary--cedar, #7d342d)); }
+.ltm-sidebar .swatch-nationalforest{ background: var(--_apply-colors---map--loc-national-forest, var(--tertiary--loam, #4f3b31)); }
 
 #ltm-habitat-filter {
   width: 100%;
@@ -234,8 +238,8 @@
   padding: 6px 8px;
   border: 1px solid var(--neutral--midnight20, #ceccc8);
   border-radius: 6px;
-  background: var(--neutral--snow, #f9f4eb);
-  color: var(--neutral--midnight, #282721);
+  background: var(--_apply-colors---map--background, var(--neutral--snow, #f9f4eb));
+  color: var(--_apply-colors---map--text, var(--neutral--midnight, #282721));
 }
 
 
