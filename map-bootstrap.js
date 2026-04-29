@@ -13,6 +13,14 @@
  * cms-counties / cms-properties / cms-locations).
  */
 (function () {
+  // Resolve biome-geometry.json relative to wherever this script was loaded from,
+  // so pinning the JS to a commit SHA pins the JSON to the same SHA automatically.
+  // Falls back to @main if the script src can't be inferred (e.g. dynamic injection).
+  const SCRIPT_SRC = (document.currentScript && document.currentScript.src) || "";
+  const BIOME_GEOM_URL = SCRIPT_SRC
+    ? SCRIPT_SRC.replace(/[^\/]+$/, "biome-geometry.json")
+    : "https://cdn.jsdelivr.net/gh/tobwebdev/mlt-map-demo@main/biome-geometry.json";
+
   // FIPS lookup for the 18 currently-active counties (extend as needed).
   const FIPS = {"beltrami":"27007","cass":"27021","clearwater":"27029","cook":"27031","crow-wing":"27035","goodhue":"27049","hennepin":"27053","houston":"27055","itasca":"27061","koochiching":"27071","lake":"27075","lyon":"27083","murray":"27101","olmsted":"27109","polk":"27119","ramsey":"27123","st-louis":"27137","winona":"27169"};
 
@@ -142,9 +150,14 @@
     Promise.all([
       loadScript("https://cdn.jsdelivr.net/npm/d3@7"),
       loadScript("https://cdn.jsdelivr.net/npm/topojson-client@3")
-    ]).then(() =>
-      d3.json("https://cdn.jsdelivr.net/npm/us-atlas@3/counties-10m.json")
-    ).then(us => {
+    ]).then(() => Promise.all([
+      d3.json("https://cdn.jsdelivr.net/npm/us-atlas@3/counties-10m.json"),
+      // Biome geometry is optional — a failed load shouldn't break the rest of the map.
+      d3.json(BIOME_GEOM_URL).catch(err => {
+        console.warn("[ltm] biome geometry failed to load:", err);
+        return {};
+      })
+    ])).then(([us, BIOME_GEOM]) => {
       const allG = us.objects.counties.geometries;
       const mnG = allG.filter(g => String(g.id).startsWith("27"));
       const mnFC = topojson.feature(us, { type: "GeometryCollection", geometries: mnG });
@@ -178,44 +191,23 @@
       const countiesIn = (k, s) => counties.filter(c => (c[k]||[]).includes(s)).map(c => c.slug);
       const extractD = h => { if (!h) return null; const m = h.match(/d="([^"]+)"/); return m ? m[1] : null; };
 
-      const BIOME_GEOM = {
-        "tallgrass-aspen-parklands": {type:"Polygon",coordinates:[[
-          [-97.2,49.0],[-96.6,49.0],[-95.1,49.4],[-94.7,49.0],
-          [-94.6,48.5],[-94.9,48.0],[-95.2,47.7],[-95.4,47.5],
-          [-95.8,47.4],[-96.4,47.3],[-97.0,47.2],[-97.2,47.5],[-97.2,49.0]
-        ]]},
-        "laurentian-mixed-forest": {type:"Polygon",coordinates:[[
-          [-94.7,49.0],[-94.0,49.4],[-92.5,49.4],[-91.0,49.0],[-89.5,48.4],
-          [-89.5,48.0],[-89.8,47.7],[-90.4,47.5],[-91.0,47.1],
-          [-91.4,46.8],[-92.0,46.7],[-92.5,46.4],[-93.0,46.1],[-93.5,46.1],
-          [-94.0,45.9],[-94.4,46.1],[-94.6,46.5],[-95.0,46.9],[-95.4,47.5],
-          [-95.2,47.7],[-94.9,48.0],[-94.6,48.5],[-94.7,49.0]
-        ]]},
-        "prairie-parkland": {type:"Polygon",coordinates:[[
-          [-97.2,47.5],[-97.0,47.2],[-96.4,47.3],[-95.8,47.4],
-          [-95.4,47.5],[-95.0,46.9],[-94.6,46.5],[-94.4,46.0],
-          [-94.4,45.5],[-94.6,45.0],[-94.4,44.5],[-94.7,44.0],
-          [-94.5,43.5],[-96.5,43.5],[-97.2,43.5],[-97.2,47.5]
-        ]]},
-        "eastern-broadleaf-forest": {type:"Polygon",coordinates:[[
-          [-94.5,43.5],[-91.2,43.5],[-91.2,43.7],[-91.8,44.0],
-          [-92.6,44.6],[-92.5,45.0],[-92.3,45.5],[-91.8,46.0],
-          [-91.4,46.8],[-92.0,46.7],[-92.5,46.4],[-93.0,46.1],
-          [-93.5,46.1],[-94.0,45.9],[-94.4,46.1],[-94.6,46.5],
-          [-94.4,46.0],[-94.4,45.5],[-94.6,45.0],[-94.4,44.5],
-          [-94.7,44.0],[-94.5,43.5]
-        ]]}
-      };
+      // Scale the SVG biome layer (authored in 0 0 614 699 user-space) to fit
+      // the d3-projected MN bounding box.
+      const [[mnX0, mnY0], [mnX1, mnY1]] = path.bounds(mnUnion);
+      const biomeSx = (mnX1 - mnX0) / 614;
+      const biomeSy = (mnY1 - mnY0) / 699;
+      svg.select(".ltm-layer-biomes")
+        .attr("transform", `translate(${mnX0},${mnY0}) scale(${biomeSx},${biomeSy})`);
+
       svg.select(".ltm-layer-biomes").selectAll("path")
         .data(biomes
           .map(b => {
-            const customD = extractD(b.boundarySvgHtml);
-            const geom = BIOME_GEOM[b.slug];
-            return customD ? { b, customD } : (geom ? { b, geom } : null);
+            const customD = extractD(b.boundarySvgHtml) || BIOME_GEOM[b.slug];
+            return customD ? { b, customD } : null;
           })
           .filter(Boolean))
         .join("path")
-          .attr("d", d => d.customD || path(d.geom))
+          .attr("d", d => d.customD)
           .attr("fill", d => d.b.color || null)
           .attr("data-slug", d => d.b.slug)
           .on("click", (e, d) => showDetail("Biome", d.b, ["stats"]));

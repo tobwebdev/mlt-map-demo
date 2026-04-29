@@ -37,9 +37,9 @@
 }
 
 
-/* --- Biomes & Regions (per-item color comes from CMS; defaults below) --- */
+/* --- Biomes & Regions (per-item color from CMS overrides; per-slug defaults below) --- */
 .ltm-layer-biomes path {
-  fill: var(--secondary--moss, #6e8e48); /* default if CMS color empty */
+  fill: var(--secondary--moss, #6e8e48); /* generic fallback if no slug match */
   fill-opacity: 0.55;
   stroke: rgba(0, 0, 0, 0.18);
   stroke-width: 0.6;
@@ -47,6 +47,13 @@
   transition: fill-opacity 0.15s;
 }
 .ltm-layer-biomes path:hover { fill-opacity: 0.75; }
+
+/* Per-biome default fills — CMS Color field still overrides via the fill attr.
+   Edit these to change a biome color without touching the CMS or JS. */
+.ltm-layer-biomes path[data-slug="tallgrass-aspen-parklands"] { fill: var(--secondary--cedar, #7d342d); }
+.ltm-layer-biomes path[data-slug="laurentian-mixed-forest"]   { fill: var(--secondary--moss, #6e8e48); }
+.ltm-layer-biomes path[data-slug="prairie-parkland"]          { fill: var(--secondary--goldenrod, #f1bb5f); }
+.ltm-layer-biomes path[data-slug="eastern-broadleaf-forest"]  { fill: var(--primary--evergreen, #1d4925); }
 
 .ltm-layer-regions path {
   fill: var(--tertiary--sky, #7facd2); /* default if CMS color empty */

@@ -4,8 +4,11 @@ Files for the Minnesota Land Trust Webflow site's interactive home page map.
 
 ## Files
 
-- `map-bootstrap.js` — Map logic. Loads d3 + topojson, builds the SVG inside `#ltm-canvas`, reads CMS Collection Lists, wires up toggles/filters/detail panel. **Hosted on jsDelivr.**
+- `map-bootstrap.js` — Map logic. Loads d3 + topojson, fetches `biome-geometry.json`, builds the SVG inside `#ltm-canvas`, reads CMS Collection Lists, wires up toggles/filters/detail panel. **Hosted on jsDelivr.**
+- `biome-geometry.json` — SVG path data for the four MN biome boundaries (Tallgrass Aspen Parklands, Laurentian Mixed Forest, Prairie Parkland, Eastern Broadleaf Forest), in `0 0 614 699` user-space. The bootstrap fetches it at runtime and scales it to fit the d3-projected MN bounding box. **Hosted on jsDelivr alongside the JS.** To update: re-export the biome SVG, paste each `<path d="..."/>` value into the matching slug.
 - `map-styles.css` — Map styling. **Reference snapshot only.** The canonical copy lives in Webflow page custom code so the client can edit colors without redeploying. See "Webflow setup" below.
+
+The bootstrap resolves `biome-geometry.json` relative to its own URL (via `document.currentScript.src`), so pinning the JS to a commit SHA also pins the JSON to that SHA — no separate version management needed.
 
 ## Webflow setup
 
