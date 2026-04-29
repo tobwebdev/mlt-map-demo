@@ -33,12 +33,34 @@
 .ltm-layer-locations .area.nationalforest{fill:#2c5f3f;stroke:#2c5f3f}
 .ltm-layer.hidden{display:none}
 .ltm-dimmed{opacity:0.18}
-.ltm-detail .kicker{color:#6f6a5e;font-size:12px;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px}
+.ltm-detail .kicker{color:#6f6a5e;text-transform:uppercase;letter-spacing:0.06em;margin:0 0 8px}
+.ltm-detail h2{margin:0 0 8px}
+.ltm-detail p{margin:6px 0}
 .ltm-detail .stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
 .ltm-detail .stat{background:#f4f1e6;border-radius:6px;padding:8px 10px}
-.ltm-detail .stat .v{font-size:18px;font-weight:600}
-.ltm-detail .stat .l{font-size:11px;color:#6f6a5e;text-transform:uppercase;letter-spacing:0.04em}
+.ltm-detail .stat .v{font-weight:600;margin:0}
+.ltm-detail .stat .l{color:#6f6a5e;text-transform:uppercase;letter-spacing:0.04em;margin:0}
 .ltm-detail img{max-width:100%;border-radius:6px;margin-top:10px}
+.ltm-detail .ltm-cta{display:inline-block;margin-top:14px;padding:10px 16px;background:#2c5f3f;color:#fff;border-radius:6px;text-decoration:none;border:1px solid #2c5f3f;transition:background 0.15s}
+.ltm-detail .ltm-cta:hover{background:#3a7a52}
+.ltm-tooltip{position:absolute;pointer-events:none;background:#fafaf6;color:#2a2a26;border:1px solid #d8d3c4;border-left:3px solid #2c5f3f;border-radius:4px;padding:6px 10px;box-shadow:0 4px 12px rgba(0,0,0,0.08);opacity:0;transition:opacity 0.12s;z-index:50;max-width:240px}
+.ltm-tooltip.show{opacity:1}
+.ltm-tooltip .ltm-tt-name{font-weight:600;margin:0}
+.ltm-tooltip .ltm-tt-type{color:#6f6a5e;margin:2px 0 0}
+.ltm-sidebar h3{margin:0 0 8px}
+.ltm-sidebar .ltm-section{margin-bottom:18px}
+.ltm-sidebar label{display:flex;align-items:center;gap:8px;padding:3px 0;cursor:pointer}
+.ltm-sidebar .swatch{width:12px;height:12px;border-radius:50%;flex:none}
+.ltm-sidebar .swatch.sq{border-radius:2px}
+.ltm-sidebar .swatch.area{border-radius:2px;opacity:0.6}
+#ltm-svg.hide-property-public .ltm-layer-properties rect:not(.private){display:none}
+#ltm-svg.hide-property-private .ltm-layer-properties rect.private{display:none}
+#ltm-svg.hide-loc-city .ltm-layer-locations .marker.city{display:none}
+#ltm-svg.hide-loc-statepark .ltm-layer-locations .marker.statepark{display:none}
+#ltm-svg.hide-loc-staterec .ltm-layer-locations .marker.staterec{display:none}
+#ltm-svg.hide-loc-stateforest .ltm-layer-locations-areas .area.stateforest,#ltm-svg.hide-loc-stateforest .ltm-layer-locations .marker.stateforest{display:none}
+#ltm-svg.hide-loc-nationalpark .ltm-layer-locations-areas .area.nationalpark,#ltm-svg.hide-loc-nationalpark .ltm-layer-locations .marker.nationalpark{display:none}
+#ltm-svg.hide-loc-nationalforest .ltm-layer-locations-areas .area.nationalforest,#ltm-svg.hide-loc-nationalforest .ltm-layer-locations .marker.nationalforest{display:none}
 .cms-data,.cms-data *{display:none!important}
 @media (max-width:900px){#ltm-mount{grid-template-columns:1fr!important}}`;
   const styleEl = document.createElement('style');
@@ -114,6 +136,35 @@
     const byKey = a => Object.fromEntries(a.map(d => [d.slug, d]));
     const I = { stats: byKey(stats), biomes: byKey(biomes), habitats: byKey(habitats), regions: byKey(regions), counties: byKey(counties) };
 
+    // Rebuild the sidebar with granular toggles (Boundary layers / Properties / Locations / Habitat filter)
+    const sidebar = document.getElementById("ltm-sidebar");
+    if (sidebar) {
+      sidebar.innerHTML = `
+        <div class="ltm-section">
+          <h3>Boundary layers</h3>
+          <label><input type="checkbox" data-layer="biomes" checked><span class="swatch area" style="background:#5b7a2f"></span> Biomes</label>
+          <label><input type="checkbox" data-layer="regions"><span class="swatch area" style="background:#185fa5"></span> Regions</label>
+          <label><input type="checkbox" data-layer="counties"><span class="swatch area" style="background:#cfc8b6"></span> Counties</label>
+        </div>
+        <div class="ltm-section">
+          <h3>Properties</h3>
+          <label><input type="checkbox" data-toggle="property-public" checked><span class="swatch sq" style="background:#2c5f3f"></span> Public access</label>
+          <label><input type="checkbox" data-toggle="property-private" checked><span class="swatch sq" style="background:#6f6a5e"></span> Private</label>
+        </div>
+        <div class="ltm-section">
+          <h3>Locations</h3>
+          <label><input type="checkbox" data-toggle="loc-city" checked><span class="swatch" style="background:#1f4f7a"></span> Cities</label>
+          <label><input type="checkbox" data-toggle="loc-statepark" checked><span class="swatch" style="background:#639922"></span> State parks</label>
+          <label><input type="checkbox" data-toggle="loc-staterec" checked><span class="swatch" style="background:#c99a3a"></span> State recreation areas</label>
+          <label><input type="checkbox" data-toggle="loc-stateforest" checked><span class="swatch sq" style="background:#5b7a2f"></span> State forests</label>
+          <label><input type="checkbox" data-toggle="loc-nationalpark" checked><span class="swatch sq" style="background:#993c1d"></span> National parks</label>
+          <label><input type="checkbox" data-toggle="loc-nationalforest" checked><span class="swatch sq" style="background:#2c5f3f"></span> National forests</label>
+        </div>
+        <div class="ltm-section">
+          <h3>Filter by habitat</h3>
+          <select id="ltm-habitat-filter" multiple class="p3" style="width:100%;min-height:120px;padding:6px 8px;border:1px solid #d8d3c4;border-radius:6px;background:white"></select>
+        </div>`;
+    }
     const habitatSelect = document.getElementById("ltm-habitat-filter");
     if (habitatSelect) {
       habitats.sort((a,b) => (+a["sort-order"]||0) - (+b["sort-order"]||0)).forEach(h => {
@@ -122,6 +173,25 @@
         habitatSelect.appendChild(opt);
       });
     }
+
+    // Tooltip element (single, reused)
+    const tooltip = document.createElement("div");
+    tooltip.className = "ltm-tooltip";
+    tooltip.innerHTML = '<p class="ltm-tt-name p2"></p><p class="ltm-tt-type p3"></p>';
+    document.body.appendChild(tooltip);
+    const ttName = tooltip.querySelector(".ltm-tt-name");
+    const ttType = tooltip.querySelector(".ltm-tt-type");
+    function showTooltip(name, type, evt) {
+      ttName.textContent = name || "";
+      ttType.textContent = type || "";
+      tooltip.classList.add("show");
+      moveTooltip(evt);
+    }
+    function moveTooltip(evt) {
+      tooltip.style.left = (evt.clientX + window.scrollX + 14) + "px";
+      tooltip.style.top = (evt.clientY + window.scrollY + 14) + "px";
+    }
+    function hideTooltip() { tooltip.classList.remove("show"); }
 
     Promise.all([
       loadScript("https://cdn.jsdelivr.net/npm/d3@7"),
@@ -185,12 +255,19 @@
 
       const project = (lat, lng) => { const la = +lat, ln = +lng; if (isNaN(la) || isNaN(ln)) return null; const p = projection([ln, la]); return p && !isNaN(p[0]) && !isNaN(p[1]) ? { x: p[0], y: p[1] } : null; };
 
+      function attachHover(sel, label, getType) {
+        sel.on("mouseenter", function(e, d) { showTooltip(d.name || d.slug, label + (getType && getType(d) ? " — " + getType(d) : ""), e); })
+           .on("mousemove", moveTooltip)
+           .on("mouseleave", hideTooltip);
+      }
+
       svg.select(".ltm-layer-properties").selectAll("rect")
         .data(properties.filter(p => project(p.lat, p.lng))).join("rect")
           .attr("x", d => project(d.lat, d.lng).x - 5).attr("y", d => project(d.lat, d.lng).y - 5)
           .attr("width", 10).attr("height", 10)
           .classed("private", d => /private/i.test(d.type || ""))
-          .on("click", (e, d) => showDetail("Property", d, ["habitats","biomes"]));
+          .on("click", (e, d) => showDetail("Property", d, ["habitats","biomes"]))
+          .call(attachHover, "Property", d => d.type);
 
       const POINT = ["City","State park","State recreation area"];
       const AREA = ["State forest","National park","National forest"];
@@ -200,45 +277,49 @@
         .data(locations.filter(l => POINT.includes(l.type) && project(l.lat, l.lng))).join("circle")
           .attr("class", d => "marker " + tcss(d.type))
           .attr("cx", d => project(d.lat, d.lng).x).attr("cy", d => project(d.lat, d.lng).y).attr("r", 4)
-          .on("click", (e, d) => showDetail("Location", d, ["habitats","biomes"]));
+          .on("click", (e, d) => showDetail("Location", d, ["habitats","biomes"]))
+          .call(attachHover, "Location", d => d.type);
 
       const areaLocs = locations.filter(l => AREA.includes(l.type));
       svg.select(".ltm-layer-locations-areas").selectAll("path")
         .data(areaLocs.filter(l => extractD(l.areaSvgHtml))).join("path")
           .attr("class", d => "area " + tcss(d.type)).attr("d", d => extractD(d.areaSvgHtml))
-          .on("click", (e, d) => showDetail("Location", d, ["habitats","biomes"]));
+          .on("click", (e, d) => showDetail("Location", d, ["habitats","biomes"]))
+          .call(attachHover, "Location", d => d.type);
       svg.select(".ltm-layer-locations").selectAll("circle.fallback")
         .data(areaLocs.filter(l => !extractD(l.areaSvgHtml) && project(l.lat, l.lng))).join("circle")
           .attr("class", d => "marker fallback " + tcss(d.type))
           .attr("cx", d => project(d.lat, d.lng).x).attr("cy", d => project(d.lat, d.lng).y).attr("r", 4)
-          .on("click", (e, d) => showDetail("Location", d, ["habitats","biomes"]));
+          .on("click", (e, d) => showDetail("Location", d, ["habitats","biomes"]))
+          .call(attachHover, "Location", d => d.type);
 
       document.querySelectorAll('input[data-layer]').forEach(input => {
         input.addEventListener("change", () => {
           const sel = ".ltm-layer-" + input.dataset.layer;
           document.querySelectorAll(sel).forEach(g => g.classList.toggle("hidden", !input.checked));
-          if (input.dataset.layer === "locations") {
-            const a = document.querySelector(".ltm-layer-locations-areas");
-            if (a) a.classList.toggle("hidden", !input.checked);
-          }
+        });
+        input.dispatchEvent(new Event("change"));
+      });
+
+      // Type-specific toggles use a CSS class on #ltm-svg to hide matching markers/areas
+      const svgEl = document.getElementById("ltm-svg");
+      document.querySelectorAll('input[data-toggle]').forEach(input => {
+        input.addEventListener("change", () => {
+          svgEl.classList.toggle("hide-" + input.dataset.toggle, !input.checked);
         });
         input.dispatchEvent(new Event("change"));
       });
 
       function applyFilters() {
         const sel = habitatSelect ? Array.from(habitatSelect.selectedOptions).map(o => o.value) : [];
-        const allowed = Array.from(document.querySelectorAll('[data-type-filter]')).filter(c => c.checked).map(c => c.dataset.typeFilter);
         const passes = (it, k) => !sel.length || sel.some(s => (it[k]||[]).includes(s));
-        svg.selectAll(".ltm-layer-properties circle").classed("ltm-dimmed", d => {
-          if (!passes(d, "habitats")) return true;
-          const t = (d.type || "").toLowerCase().includes("private") ? "private" : "public-access";
-          return !allowed.includes(t);
-        });
+        svg.selectAll(".ltm-layer-properties rect").classed("ltm-dimmed", d => !passes(d, "habitats"));
         svg.selectAll(".ltm-layer-locations .marker").classed("ltm-dimmed", d => !passes(d, "habitats"));
         svg.selectAll(".ltm-layer-locations-areas .area").classed("ltm-dimmed", d => !passes(d, "habitats"));
       }
       if (habitatSelect) habitatSelect.addEventListener("change", applyFilters);
-      document.querySelectorAll('[data-type-filter]').forEach(c => c.addEventListener("change", applyFilters));
+
+      const URL_PATTERNS = { Region: "/regions/", County: "/counties/", Property: "/property/", Location: "/locations/", Biome: "/biomes/", Habitat: "/habitats/", Statistic: "/statistics/" };
 
       function showDetail(kind, item, refKeys) {
         const detail = document.getElementById("ltm-detail"); if (!detail) return;
@@ -249,8 +330,10 @@
           return `<p><strong>${k[0].toUpperCase()+k.slice(1)}:</strong> ${names}</p>`;
         }).join("");
         const statsHtml = (item.stats && item.stats.length)
-          ? `<div class="stats">${item.stats.map(s => { const st = I.stats[s]; if (!st) return ""; return `<div class="stat"><div class="v">${st.value || ""}</div><div class="l">${st.name || ""}${st.unit?(" — "+st.unit):""}</div></div>`; }).join("")}</div>` : "";
-        detail.innerHTML = `<div class="kicker">${kind}</div><h2>${item.name || item.slug}</h2>${item.summary ? `<p>${item.summary}</p>` : ""}${item.acreage ? `<p><strong>Acreage:</strong> ${(+item.acreage).toLocaleString()} acres</p>` : ""}${item.type ? `<p><strong>Type:</strong> ${item.type}</p>` : ""}${refsHtml}${statsHtml}${item.photo ? `<img src="${item.photo}" alt="">` : ""}`;
+          ? `<div class="stats">${item.stats.map(s => { const st = I.stats[s]; if (!st) return ""; return `<div class="stat"><p class="v p1">${st.value || ""}</p><p class="l p3">${st.name || ""}${st.unit?(" — "+st.unit):""}</p></div>`; }).join("")}</div>` : "";
+        const pattern = URL_PATTERNS[kind];
+        const ctaHtml = (pattern && item.slug) ? `<a class="ltm-cta" href="${pattern}${item.slug}">Learn more</a>` : "";
+        detail.innerHTML = `<p class="kicker p3">${kind}</p><h2>${item.name || item.slug}</h2>${item.summary ? `<p>${item.summary}</p>` : ""}${item.acreage ? `<p><strong>Acreage:</strong> ${(+item.acreage).toLocaleString()} acres</p>` : ""}${item.type ? `<p><strong>Type:</strong> ${item.type}</p>` : ""}${refsHtml}${statsHtml}${item.photo ? `<img src="${item.photo}" alt="">` : ""}${ctaHtml}`;
       }
     }).catch(err => {
       console.error("[ltm]", err);
