@@ -1,72 +1,18 @@
 /*!
  * MLT Map Bootstrap
  * Loaded on the home page (Before </body>) of the Minnesota Land Trust Webflow site.
- * Injects layer CSS, loads d3 + topojson, builds the SVG, reads CMS Collection Lists,
- * and wires up toggles, filters, and the click-to-detail panel.
+ * Loads d3 + topojson, builds the SVG, reads CMS Collection Lists, and wires up
+ * toggles, filters, and the click-to-detail panel.
+ *
+ * Styling lives in Webflow page custom code (Inside <head> tag) so the client can
+ * edit colors and layout directly. See map-styles.css in this repo for a reference
+ * snapshot of what to paste there.
  *
  * The map will render with just MN county outlines until the 7 hidden Collection
  * Lists are added (cms-statistics / cms-biomes / cms-habitats / cms-regions /
  * cms-counties / cms-properties / cms-locations).
  */
 (function () {
-  // Layer-specific styles that the whtml_builder CSS param couldn't apply
-  const CSS = `
-.ltm-layer-outline path{fill:#f4f1e6;stroke:#a8a08e;stroke-width:1.2}
-.ltm-layer-counties path{fill:none;stroke:#cfc8b6;stroke-width:0.5}
-.ltm-layer-counties path.in-cms{fill:rgba(0,0,0,0.04);cursor:pointer}
-.ltm-layer-counties path.in-cms:hover{fill:rgba(0,0,0,0.10)}
-.ltm-layer-biomes path{fill-opacity:0.55;stroke:rgba(0,0,0,0.18);stroke-width:0.6;cursor:pointer;transition:fill-opacity 0.15s}
-.ltm-layer-biomes path:hover{fill-opacity:0.75}
-.ltm-layer-regions path{fill-opacity:0.35;stroke:rgba(0,0,0,0.25);stroke-width:0.8;cursor:pointer}
-.ltm-layer-properties rect{fill:#2c5f3f;stroke:white;stroke-width:1.2;cursor:pointer;transition:transform 0.15s;transform-box:fill-box;transform-origin:center}
-.ltm-layer-properties rect:hover{transform:scale(2)}
-.ltm-layer-properties rect.private{fill:#6f6a5e}
-.ltm-layer-locations .marker{stroke:white;stroke-width:1.2;cursor:pointer}
-.ltm-layer-locations .marker.statepark,.ltm-layer-locations .marker.staterec{fill:#639922;transition:transform 0.15s;transform-box:fill-box;transform-origin:center}
-.ltm-layer-locations .marker.staterec{fill:#c99a3a}
-.ltm-layer-locations .marker.statepark:hover,.ltm-layer-locations .marker.staterec:hover{transform:scale(2)}
-.ltm-layer-locations .marker.city{fill:#1f4f7a}
-.ltm-layer-locations .area{fill:#185fa5;fill-opacity:0.25;stroke:#185fa5;stroke-width:1;cursor:pointer;transition:fill-opacity 0.15s,stroke-width 0.15s}
-.ltm-layer-locations .area:hover{fill-opacity:0.55;stroke-width:2.5}
-.ltm-layer-locations .area.stateforest{fill:#5b7a2f;stroke:#5b7a2f}
-.ltm-layer-locations .area.nationalpark{fill:#993c1d;stroke:#993c1d}
-.ltm-layer-locations .area.nationalforest{fill:#2c5f3f;stroke:#2c5f3f}
-.ltm-layer.hidden{display:none}
-.ltm-dimmed{opacity:0.18}
-.ltm-detail .kicker{color:#6f6a5e;text-transform:uppercase;letter-spacing:0.06em;margin:0 0 8px}
-.ltm-detail h2{margin:0 0 8px}
-.ltm-detail p{margin:6px 0}
-.ltm-detail .stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
-.ltm-detail .stat{background:#f4f1e6;border-radius:6px;padding:8px 10px}
-.ltm-detail .stat .v{font-weight:600;margin:0}
-.ltm-detail .stat .l{color:#6f6a5e;text-transform:uppercase;letter-spacing:0.04em;margin:0}
-.ltm-detail img{max-width:100%;border-radius:6px;margin-top:10px}
-.ltm-detail .ltm-cta{display:inline-block;margin-top:14px;padding:10px 16px;background:#2c5f3f;color:#fff;border-radius:6px;text-decoration:none;border:1px solid #2c5f3f;transition:background 0.15s}
-.ltm-detail .ltm-cta:hover{background:#3a7a52}
-.ltm-tooltip{position:absolute;pointer-events:none;background:#fafaf6;color:#2a2a26;border:1px solid #d8d3c4;border-left:3px solid #2c5f3f;border-radius:4px;padding:6px 10px;box-shadow:0 4px 12px rgba(0,0,0,0.08);opacity:0;transition:opacity 0.12s;z-index:50;max-width:240px}
-.ltm-tooltip.show{opacity:1}
-.ltm-tooltip .ltm-tt-name{font-weight:600;margin:0}
-.ltm-tooltip .ltm-tt-type{color:#6f6a5e;margin:2px 0 0}
-.ltm-sidebar h3{margin:0 0 8px}
-.ltm-sidebar .ltm-section{margin-bottom:18px}
-.ltm-sidebar label{display:flex;align-items:center;gap:8px;padding:3px 0;cursor:pointer}
-.ltm-sidebar .swatch{width:12px;height:12px;border-radius:50%;flex:none}
-.ltm-sidebar .swatch.sq{border-radius:2px}
-.ltm-sidebar .swatch.area{border-radius:2px;opacity:0.6}
-#ltm-svg.hide-property-public .ltm-layer-properties rect:not(.private){display:none}
-#ltm-svg.hide-property-private .ltm-layer-properties rect.private{display:none}
-#ltm-svg.hide-loc-city .ltm-layer-locations .marker.city{display:none}
-#ltm-svg.hide-loc-statepark .ltm-layer-locations .marker.statepark{display:none}
-#ltm-svg.hide-loc-staterec .ltm-layer-locations .marker.staterec{display:none}
-#ltm-svg.hide-loc-stateforest .ltm-layer-locations-areas .area.stateforest,#ltm-svg.hide-loc-stateforest .ltm-layer-locations .marker.stateforest{display:none}
-#ltm-svg.hide-loc-nationalpark .ltm-layer-locations-areas .area.nationalpark,#ltm-svg.hide-loc-nationalpark .ltm-layer-locations .marker.nationalpark{display:none}
-#ltm-svg.hide-loc-nationalforest .ltm-layer-locations-areas .area.nationalforest,#ltm-svg.hide-loc-nationalforest .ltm-layer-locations .marker.nationalforest{display:none}
-.cms-data,.cms-data *{display:none!important}
-@media (max-width:900px){#ltm-mount{grid-template-columns:1fr!important}}`;
-  const styleEl = document.createElement('style');
-  styleEl.textContent = CSS;
-  document.head.appendChild(styleEl);
-
   // FIPS lookup for the 18 currently-active counties (extend as needed).
   const FIPS = {"beltrami":"27007","cass":"27021","clearwater":"27029","cook":"27031","crow-wing":"27035","goodhue":"27049","hennepin":"27053","houston":"27055","itasca":"27061","koochiching":"27071","lake":"27075","lyon":"27083","murray":"27101","olmsted":"27109","polk":"27119","ramsey":"27123","st-louis":"27137","winona":"27169"};
 
@@ -142,27 +88,27 @@
       sidebar.innerHTML = `
         <div class="ltm-section">
           <h3>Boundary layers</h3>
-          <label><input type="checkbox" data-layer="biomes" checked><span class="swatch area" style="background:#5b7a2f"></span> Biomes</label>
-          <label><input type="checkbox" data-layer="regions"><span class="swatch area" style="background:#185fa5"></span> Regions</label>
-          <label><input type="checkbox" data-layer="counties"><span class="swatch area" style="background:#cfc8b6"></span> Counties</label>
+          <label><input type="checkbox" data-layer="biomes" checked><span class="swatch swatch--area swatch-biomes"></span> Biomes</label>
+          <label><input type="checkbox" data-layer="regions"><span class="swatch swatch--area swatch-regions"></span> Regions</label>
+          <label><input type="checkbox" data-layer="counties"><span class="swatch swatch--area swatch-counties"></span> Counties</label>
         </div>
         <div class="ltm-section">
           <h3>Properties</h3>
-          <label><input type="checkbox" data-toggle="property-public" checked><span class="swatch sq" style="background:#2c5f3f"></span> Public access</label>
-          <label><input type="checkbox" data-toggle="property-private" checked><span class="swatch sq" style="background:#6f6a5e"></span> Private</label>
+          <label><input type="checkbox" data-toggle="property-public" checked><span class="swatch swatch--sq swatch-public"></span> Public access</label>
+          <label><input type="checkbox" data-toggle="property-private" checked><span class="swatch swatch--sq swatch-private"></span> Private</label>
         </div>
         <div class="ltm-section">
           <h3>Locations</h3>
-          <label><input type="checkbox" data-toggle="loc-city" checked><span class="swatch" style="background:#1f4f7a"></span> Cities</label>
-          <label><input type="checkbox" data-toggle="loc-statepark" checked><span class="swatch" style="background:#639922"></span> State parks</label>
-          <label><input type="checkbox" data-toggle="loc-staterec" checked><span class="swatch" style="background:#c99a3a"></span> State recreation areas</label>
-          <label><input type="checkbox" data-toggle="loc-stateforest" checked><span class="swatch sq" style="background:#5b7a2f"></span> State forests</label>
-          <label><input type="checkbox" data-toggle="loc-nationalpark" checked><span class="swatch sq" style="background:#993c1d"></span> National parks</label>
-          <label><input type="checkbox" data-toggle="loc-nationalforest" checked><span class="swatch sq" style="background:#2c5f3f"></span> National forests</label>
+          <label><input type="checkbox" data-toggle="loc-city" checked><span class="swatch swatch-city"></span> Cities</label>
+          <label><input type="checkbox" data-toggle="loc-statepark" checked><span class="swatch swatch-statepark"></span> State parks</label>
+          <label><input type="checkbox" data-toggle="loc-staterec" checked><span class="swatch swatch-staterec"></span> State recreation areas</label>
+          <label><input type="checkbox" data-toggle="loc-stateforest" checked><span class="swatch swatch--sq swatch-stateforest"></span> State forests</label>
+          <label><input type="checkbox" data-toggle="loc-nationalpark" checked><span class="swatch swatch--sq swatch-nationalpark"></span> National parks</label>
+          <label><input type="checkbox" data-toggle="loc-nationalforest" checked><span class="swatch swatch--sq swatch-nationalforest"></span> National forests</label>
         </div>
         <div class="ltm-section">
           <h3>Filter by habitat</h3>
-          <select id="ltm-habitat-filter" multiple class="p3" style="width:100%;min-height:120px;padding:6px 8px;border:1px solid #d8d3c4;border-radius:6px;background:white"></select>
+          <select id="ltm-habitat-filter" multiple class="p3"></select>
         </div>`;
     }
     const habitatSelect = document.getElementById("ltm-habitat-filter");
@@ -270,14 +216,14 @@
           .filter(Boolean))
         .join("path")
           .attr("d", d => d.customD || path(d.geom))
-          .attr("fill", d => d.b.color || "#2c5f3f")
+          .attr("fill", d => d.b.color || null)
           .attr("data-slug", d => d.b.slug)
           .on("click", (e, d) => showDetail("Biome", d.b, ["stats"]));
 
       svg.select(".ltm-layer-regions").selectAll("path")
         .data(regions.map(r => ({ r, f: mergeForGroup(countiesIn("regions", r.slug)) })).filter(d => d.f))
         .join("path")
-          .attr("d", d => path(d.f)).attr("fill", d => d.r.color || "#185fa5")
+          .attr("d", d => path(d.f)).attr("fill", d => d.r.color || null)
           .on("click", (e, d) => showDetail("Region", d.r, ["stats"]));
 
       const project = (lat, lng) => { const la = +lat, ln = +lng; if (isNaN(la) || isNaN(ln)) return null; const p = projection([ln, la]); return p && !isNaN(p[0]) && !isNaN(p[1]) ? { x: p[0], y: p[1] } : null; };
